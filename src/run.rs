@@ -40,9 +40,9 @@ pub async fn run(config: Config) -> Result<()> {
     }));
 
     let _ = sched.start().await;
-  
+
     // Poor man's main loop
-    loop {  
+    loop {
         tokio::time::sleep(core::time::Duration::from_secs(60)).await;
     }
 
