@@ -10,8 +10,16 @@ pub struct TaskConfig {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+pub struct PubSubConfig {
+    pub key_file: String,
+    pub jobs_topic: String,
+    pub events_topic: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     pub tasks: Vec<TaskConfig>,
+    pub pubsub: PubSubConfig,
 }
 
 impl Config {
@@ -33,6 +41,12 @@ impl Config {
 
         if config.tasks.len() == 0 {
             return Err("No tasks defined in the config file.");
+        }
+
+        // Validate if key file exists
+        let config_path = Path::new(config.pubsub.key_file.as_str());
+        if !config_path.exists() {
+            return Err("Service account file does not exists.");
         }
 
         Ok(config)

@@ -8,15 +8,18 @@ pub async fn run(config: Config) -> Result<()> {
     let mut sched = JobScheduler::new().await?;
 
     for task in config.tasks.iter() {
+        println!("Added job: {} -> {}", task.name, task.schedule);
+
         let name = task.name.clone();
         let schedule = task.schedule.clone();
-        println!("Added job: {} -> {}", name, schedule);
+        let pubsub_config = config.pubsub.clone();
 
         let job = Job::new_async(schedule.as_str(), move |_uuid, mut _lock| {
             let job_name = name.clone();
+            let pubsub_config_copy = pubsub_config.clone();
             println!("{} at {}", job_name, chrono::Utc::now());
             Box::pin(async move {
-                if let Err(err) = send_job(&job_name).await {
+                if let Err(err) = send_job(&pubsub_config_copy, &job_name).await {
                     eprintln!("Error on {}: {}", job_name, err);
                 }
             })

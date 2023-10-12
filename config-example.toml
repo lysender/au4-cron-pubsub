@@ -1,3 +1,4 @@
+key_file = "/path/to/service-account.json"
 tasks = [
 	{ name = "FlushEventOutboxJob", schedule = "1/10 * * * * *" },
 	{ name = "RefreshAuthCacheJob", schedule = "1/60 * * * * *" },
