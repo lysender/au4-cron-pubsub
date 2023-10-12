@@ -1,4 +1,6 @@
-use pub_sub_client::{PubSubClient, PublishedMessage};
+use std::collections::HashMap;
+use base64::{engine::general_purpose::STANDARD, Engine};
+use pub_sub_client::{PubSubClient, PublishedMessage, RawPublishedMessage};
 use pub_sub_client_derive::PublishedMessage;
 use serde::{Serialize, Deserialize};
 
@@ -30,9 +32,17 @@ pub async fn send_job(pubsub_config: &PubSubConfig, name: &String) -> Result<()>
             data: {}
         };
 
-        let mut messages: Vec<PublishedJobDto> = Vec::new();
-        messages.push(job);
-        let _ = client.publish(&pubsub_config.jobs_topic, messages, None, None).await?;
+        let mut attributes: HashMap<String, String> = HashMap::new();
+        attributes.insert("token".to_string(), String::from("sample"));
+
+        let msg = RawPublishedMessage {
+            data: Some(STANDARD.encode(serde_json::to_string(&job).unwrap())),
+            attributes: Some(attributes),
+            ordering_key: None,
+        };
+        let mut messages: Vec<RawPublishedMessage<'_>> = Vec::new();
+        messages.push(msg);
+        let _ = client.publish_raw(&pubsub_config.jobs_topic, messages, None).await?;
     } else if name.ends_with("Event") {
         // Publish an event
          let event = PublishedEventDto {
@@ -40,9 +50,19 @@ pub async fn send_job(pubsub_config: &PubSubConfig, name: &String) -> Result<()>
             event: name.to_string(),
             data: {}
         };
-        let mut messages: Vec<PublishedEventDto> = Vec::new();
-        messages.push(event);
-        let _ = client.publish(&pubsub_config.jobs_topic, messages, None, None).await?;
+
+        let mut attributes: HashMap<String, String> = HashMap::new();
+        attributes.insert("token".to_string(), String::from("sample"));
+
+        let msg = RawPublishedMessage {
+            data: Some(STANDARD.encode(serde_json::to_string(&event).unwrap())),
+            attributes: Some(attributes),
+            ordering_key: None,
+        };
+        let mut messages: Vec<RawPublishedMessage<'_>> = Vec::new();
+        messages.push(msg);
+        let _ = client.publish_raw(&pubsub_config.events_topic, messages, None).await?;
+
     }
 
     Ok(())

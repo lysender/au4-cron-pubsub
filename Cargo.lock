@@ -256,6 +256,7 @@ name = "cron-pubsub"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "base64 0.21.4",
  "chrono",
  "clap",
  "pub-sub-client",
