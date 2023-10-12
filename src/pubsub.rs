@@ -20,7 +20,6 @@ struct PublishedEventDto {
 }
 
 pub async fn send_job(pubsub_config: &PubSubConfig, name: &String) -> Result<()> {
-    println!("Sending job: {} to Google pub/sub", name);
     let client = PubSubClient::new(pubsub_config.key_file.as_str(), std::time::Duration::from_secs(30))?;
 
     if name.ends_with("Job") {
@@ -33,8 +32,7 @@ pub async fn send_job(pubsub_config: &PubSubConfig, name: &String) -> Result<()>
 
         let mut messages: Vec<PublishedJobDto> = Vec::new();
         messages.push(job);
-        let message_ids = client.publish(&pubsub_config.jobs_topic, messages, None, None).await?;
-        println!("{:?}", message_ids);
+        let _ = client.publish(&pubsub_config.jobs_topic, messages, None, None).await?;
     } else if name.ends_with("Event") {
         // Publish an event
          let event = PublishedEventDto {
@@ -44,8 +42,7 @@ pub async fn send_job(pubsub_config: &PubSubConfig, name: &String) -> Result<()>
         };
         let mut messages: Vec<PublishedEventDto> = Vec::new();
         messages.push(event);
-        let message_ids = client.publish(&pubsub_config.jobs_topic, messages, None, None).await?;
-        println!("{:?}", message_ids);
+        let _ = client.publish(&pubsub_config.jobs_topic, messages, None, None).await?;
     }
 
     Ok(())
