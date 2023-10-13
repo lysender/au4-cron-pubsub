@@ -10,12 +10,13 @@ pub async fn run(config: Config) -> Result<()> {
     for task in config.tasks.iter() {
         println!("Added job: {} -> {}", task.name, task.schedule);
 
+        // Clone values to feed into closures run in separate threads
         let name = task.name.clone();
-        let schedule = task.schedule.clone();
         let pubsub_config = config.pubsub.clone();
         let jwt_secret = config.jwt_secret.clone();
 
-        let job = Job::new_async(schedule.as_str(), move |_uuid, mut _lock| {
+        let job = Job::new_async(task.schedule.as_str(), move |_uuid, mut _lock| {
+            // Clone values to feed into Box pin, whatever that means...
             let job_name = name.clone();
             let pubsub_config_copy = pubsub_config.clone();
             let jwt_secret_copy = jwt_secret.clone();
@@ -28,6 +29,7 @@ pub async fn run(config: Config) -> Result<()> {
                     true => pubsub_config_copy.jobs_topic,
                     false => pubsub_config_copy.events_topic,
                 };
+
                 if let Ok(client) = create_client(&pubsub_config_copy.key_file) {
                     let message = create_message(&job_name, is_job, &jwt_secret_copy);
                     if let Err(err) = send_message(&client, &topic, message).await {
