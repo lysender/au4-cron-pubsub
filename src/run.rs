@@ -2,7 +2,7 @@ use tokio_cron_scheduler::{JobScheduler, Job};
 
 use crate::error::Result;
 use crate::config::Config;
-use crate::pubsub::send_job;
+use crate::pubsub::{create_message, create_client, send_message};
 
 pub async fn run(config: Config) -> Result<()> {
     let mut sched = JobScheduler::new().await?;
@@ -19,10 +19,20 @@ pub async fn run(config: Config) -> Result<()> {
             let job_name = name.clone();
             let pubsub_config_copy = pubsub_config.clone();
             let jwt_secret_copy = jwt_secret.clone();
+
             println!("{} at {}", job_name, chrono::Utc::now());
+
             Box::pin(async move {
-                if let Err(err) = send_job(&pubsub_config_copy, &jwt_secret_copy, &job_name).await {
-                    eprintln!("Error on {}: {}", job_name, err);
+                let is_job = job_name.ends_with("Job");
+                let topic = match is_job {
+                    true => pubsub_config_copy.jobs_topic,
+                    false => pubsub_config_copy.events_topic,
+                };
+                if let Ok(client) = create_client(&pubsub_config_copy.key_file) {
+                    let message = create_message(&job_name, is_job, &jwt_secret_copy);
+                    if let Err(err) = send_message(&client, &topic, message).await {
+                        eprintln!("Error on {}: {}", job_name, err);
+                    }
                 }
             })
         }).unwrap();
