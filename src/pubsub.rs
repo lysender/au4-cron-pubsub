@@ -12,17 +12,17 @@ struct DummyLabels {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct PublishedJobDto {
+struct PublishedJobDto<T> {
     id: String,
     job: String,
-    data: DummyLabels,
+    data: T,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct PublishedEventDto {
+struct PublishedEventDto<T> {
     id: String,
     event: String,
-    data: DummyLabels,
+    data: T,
 }
 
 pub async fn send_job(pubsub_config: &PubSubConfig, jwt_secret: &String, name: &String) -> Result<()> {
@@ -43,7 +43,7 @@ pub async fn send_job(pubsub_config: &PubSubConfig, jwt_secret: &String, name: &
             HashMap::from([("token".to_string(), token)]),
         )];
 
-        let result = client.publish::<PublishedJobDto, _>(&pubsub_config.jobs_topic, messages, None, None).await;
+        let result = client.publish::<PublishedJobDto<DummyLabels>, _>(&pubsub_config.jobs_topic, messages, None, None).await;
         if let Err(err) = result {
             eprintln!("Publish failed: {}", err);
         }
@@ -62,7 +62,7 @@ pub async fn send_job(pubsub_config: &PubSubConfig, jwt_secret: &String, name: &
             HashMap::from([("token".to_string(), token)]),
         )];
 
-        let result = client.publish::<PublishedEventDto, _>(&pubsub_config.events_topic, messages, None, None).await;
+        let result = client.publish::<PublishedEventDto<DummyLabels>, _>(&pubsub_config.events_topic, messages, None, None).await;
         if let Err(err) = result {
             eprintln!("Publish failed: {}", err);
         }
