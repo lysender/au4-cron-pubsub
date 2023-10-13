@@ -13,13 +13,15 @@ pub async fn run(config: Config) -> Result<()> {
         let name = task.name.clone();
         let schedule = task.schedule.clone();
         let pubsub_config = config.pubsub.clone();
+        let jwt_secret = config.jwt_secret.clone();
 
         let job = Job::new_async(schedule.as_str(), move |_uuid, mut _lock| {
             let job_name = name.clone();
             let pubsub_config_copy = pubsub_config.clone();
+            let jwt_secret_copy = jwt_secret.clone();
             println!("{} at {}", job_name, chrono::Utc::now());
             Box::pin(async move {
-                if let Err(err) = send_job(&pubsub_config_copy, &job_name).await {
+                if let Err(err) = send_job(&pubsub_config_copy, &jwt_secret_copy, &job_name).await {
                     eprintln!("Error on {}: {}", job_name, err);
                 }
             })

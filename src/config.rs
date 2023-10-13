@@ -19,6 +19,7 @@ pub struct PubSubConfig {
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     pub tasks: Vec<TaskConfig>,
+    pub jwt_secret: String,
     pub pubsub: PubSubConfig,
 }
 
@@ -47,6 +48,11 @@ impl Config {
         let config_path = Path::new(config.pubsub.key_file.as_str());
         if !config_path.exists() {
             return Err("Service account file does not exists.");
+        }
+
+        // Validate if jwt_secret has enough string length
+        if config.jwt_secret.len() < 1 {
+            return Err("JWT secret must not be empty.");
         }
 
         Ok(config)

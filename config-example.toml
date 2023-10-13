@@ -3,6 +3,8 @@ tasks = [
     { name = "RefreshAuthCacheFakeJob", schedule = "1/60 * * * * *" },
 ]
 
+jwt_secret = "secret"
+
 [pubsub]
 key_file = "/path/to/google/pubsub-service-account.json"
 jobs_topic = "jobs-topic-id"

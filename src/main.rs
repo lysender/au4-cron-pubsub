@@ -5,8 +5,9 @@ use crate::run::run;
 
 mod config;
 mod error;
-mod run;
+mod jwt;
 mod pubsub;
+mod run;
 
 #[tokio::main]
 async fn main() {
