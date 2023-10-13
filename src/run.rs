@@ -1,3 +1,4 @@
+use log::{info, error};
 use tokio_cron_scheduler::{JobScheduler, Job};
 
 use crate::error::Result;
@@ -8,7 +9,7 @@ pub async fn run(config: Config) -> Result<()> {
     let mut sched = JobScheduler::new().await?;
 
     for task in config.tasks.iter() {
-        println!("Added job: {} -> {}", task.name, task.schedule);
+        info!("Add job: {} -> {}", task.name, task.schedule);
 
         // Clone values to feed into closures run in separate threads
         let name = task.name.clone();
@@ -21,7 +22,7 @@ pub async fn run(config: Config) -> Result<()> {
             let pubsub_config_copy = pubsub_config.clone();
             let jwt_secret_copy = jwt_secret.clone();
 
-            println!("{} at {}", job_name, chrono::Utc::now());
+            info!("Send {}", job_name);
 
             Box::pin(async move {
                 let is_job = job_name.ends_with("Job");
@@ -33,7 +34,7 @@ pub async fn run(config: Config) -> Result<()> {
                 if let Ok(client) = create_client(&pubsub_config_copy.key_file) {
                     let message = create_message(&job_name, is_job, &jwt_secret_copy);
                     if let Err(err) = send_message(&client, &topic, message).await {
-                        eprintln!("Error on {}: {}", job_name, err);
+                        error!("Error on {}: {}", job_name, err);
                     }
                 }
             })
@@ -42,14 +43,14 @@ pub async fn run(config: Config) -> Result<()> {
         sched.add(job).await?;
     }
 
-    println!("");
+    info!("Application started");
 
     #[cfg(feature = "signal")]
     sched.shutdown_on_ctrl_c();
 
     sched.set_shutdown_handler(Box::new(|| {
       Box::pin(async move {
-        println!("Shut down done");
+        info!("Shut down done");
       })
     }));
 
