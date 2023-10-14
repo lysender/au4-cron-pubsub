@@ -1,6 +1,9 @@
 tasks = [
-    { name = "FlushEventOutboxFakeJob", schedule = "1/10 * * * * *" },
-    { name = "RefreshAuthCacheFakeJob", schedule = "1/60 * * * * *" },
+    # Every 10 seconds
+    { name = "FlushEventOutboxJob", schedule = "1/10 * * * * *" },
+
+    # Every minute
+    { name = "RefreshAuthCacheJob", schedule = "0 1/1 * * * *" },
 ]
 
 jwt_secret = "secret"
