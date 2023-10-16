@@ -1,4 +1,4 @@
-use log::{info, error};
+use tracing::{info, error};
 use tokio_cron_scheduler::{JobScheduler, Job};
 
 use crate::error::Result;
