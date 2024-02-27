@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use pub_sub_client::PubSubClient;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::error::Result;
 use crate::jwt::create_token;
@@ -36,7 +36,11 @@ pub fn create_client(key_file: &String) -> Result<PubSubClient> {
     Ok(client)
 }
 
-pub fn create_message(name: &String, is_job: bool, jwt_secret: &String) -> (PublishedPayload<StubData>, HashMap<String, String>) {
+pub fn create_message(
+    name: &String,
+    is_job: bool,
+    jwt_secret: &String,
+) -> (PublishedPayload<StubData>, HashMap<String, String>) {
     let id = uuid::Uuid::new_v4().to_string();
     let token = create_token(&id, jwt_secret).unwrap();
 
@@ -45,9 +49,7 @@ pub fn create_message(name: &String, is_job: bool, jwt_secret: &String) -> (Publ
             PublishedPayload::Job(PublishedJobDto {
                 id,
                 job: name.to_string(),
-                data: StubData {
-                    stub: None,
-                }
+                data: StubData { stub: None },
             }),
             HashMap::from([("token".to_string(), token)]),
         )
@@ -56,9 +58,7 @@ pub fn create_message(name: &String, is_job: bool, jwt_secret: &String) -> (Publ
             PublishedPayload::Event(PublishedEventDto {
                 id,
                 event: name.to_string(),
-                data: StubData {
-                    stub: None,
-                }
+                data: StubData { stub: None },
             }),
             HashMap::from([
                 ("token".to_string(), token),
@@ -68,7 +68,13 @@ pub fn create_message(name: &String, is_job: bool, jwt_secret: &String) -> (Publ
     }
 }
 
-pub async fn send_message(client: &PubSubClient, topic: &String, message: (PublishedPayload<StubData>, HashMap<String, String>)) -> Result<()>{
-    client.publish::<PublishedPayload<StubData>, _>(topic, vec![message], None, None).await?;
+pub async fn send_message(
+    client: &PubSubClient,
+    topic: &String,
+    message: (PublishedPayload<StubData>, HashMap<String, String>),
+) -> Result<()> {
+    client
+        .publish::<PublishedPayload<StubData>, _>(topic, vec![message], None, None)
+        .await?;
     Ok(())
 }

@@ -1,7 +1,7 @@
-use std::{fs, path::PathBuf};
-use std::path::Path;
-use serde::Deserialize;
 use clap::Parser;
+use serde::Deserialize;
+use std::path::Path;
+use std::{fs, path::PathBuf};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct TaskConfig {
@@ -67,4 +67,3 @@ pub struct Args {
     #[arg(short, long, value_name = "FILE.toml")]
     pub config: PathBuf,
 }
-

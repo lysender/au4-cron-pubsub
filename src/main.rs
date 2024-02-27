@@ -1,5 +1,5 @@
-use std::process;
 use clap::Parser;
+use std::process;
 
 use crate::config::{Args, Config};
 use crate::run::run;
@@ -14,10 +14,7 @@ mod run;
 async fn main() {
     // Set the RUST_LOG, if it hasn't been explicitly defined
     if std::env::var_os("RUST_LOG").is_none() {
-        std::env::set_var(
-            "RUST_LOG",
-            "cron_pubsub=info",
-        )
+        std::env::set_var("RUST_LOG", "cron_pubsub=info")
     }
 
     tracing_subscriber::fmt::init();

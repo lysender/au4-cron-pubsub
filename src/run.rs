@@ -1,9 +1,9 @@
-use tracing::{info, error};
-use tokio_cron_scheduler::{JobScheduler, Job};
+use tokio_cron_scheduler::{Job, JobScheduler};
+use tracing::{error, info};
 
-use crate::error::Result;
 use crate::config::{Config, TaskConfig};
-use crate::pubsub::{create_message, create_client, send_message};
+use crate::error::Result;
+use crate::pubsub::{create_client, create_message, send_message};
 
 pub async fn run(config: Config) -> Result<()> {
     let mut sched = JobScheduler::new().await?;
@@ -18,9 +18,9 @@ pub async fn run(config: Config) -> Result<()> {
     sched.shutdown_on_ctrl_c();
 
     sched.set_shutdown_handler(Box::new(|| {
-      Box::pin(async move {
-        info!("Shut down done");
-      })
+        Box::pin(async move {
+            info!("Shut down done");
+        })
     }));
 
     let _ = sched.start().await;
@@ -63,7 +63,8 @@ async fn add_job(sched: &JobScheduler, config: &Config, task: &TaskConfig) -> Re
                 }
             }
         })
-    }).unwrap();
+    })
+    .unwrap();
 
     sched.add(job).await?;
     Ok(())
