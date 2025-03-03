@@ -14,9 +14,6 @@ pub async fn run(config: Config) -> Result<()> {
 
     info!("Application started");
 
-    #[cfg(feature = "signal")]
-    sched.shutdown_on_ctrl_c();
-
     sched.set_shutdown_handler(Box::new(|| {
         Box::pin(async move {
             info!("Shut down done");
