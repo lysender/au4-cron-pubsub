@@ -1,10 +1,34 @@
-use jwt_simple::prelude::*;
+use anyhow::anyhow;
+use chrono::{Duration, Utc};
+use jsonwebtoken::{EncodingKey, Header, encode};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize, Serialize)]
+struct Claims {
+    sub: String,
+    exp: usize,
+}
+
+// Duration in seconds
+const EXP_DURATION: i64 = 60 * 60; // 1 hour 
 
 use crate::error::Result;
 
-pub fn create_token(subject: &String, secret: &String) -> Result<String> {
-    let key = HS256Key::from_bytes(secret.as_bytes());
-    let claims = Claims::create(Duration::from_hours(1)).with_subject(subject);
-    let token = key.authenticate(claims)?;
+pub fn create_token(subject: &str, secret: &str) -> Result<String> {
+    let exp = Utc::now() + Duration::seconds(EXP_DURATION);
+
+    let claims = Claims {
+        sub: subject.to_string(),
+        exp: exp.timestamp() as usize,
+    };
+
+    let Ok(token) = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_bytes()),
+    ) else {
+        return Err(anyhow!("Error creating JWT token"));
+    };
+
     Ok(token)
 }

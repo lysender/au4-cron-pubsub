@@ -41,7 +41,7 @@ pub fn create_message(
     is_job: bool,
     jwt_secret: &String,
 ) -> (PublishedPayload<StubData>, HashMap<String, String>) {
-    let id = uuid::Uuid::new_v4().to_string();
+    let id = uuid::Uuid::now_v7().to_string();
     let token = create_token(&id, jwt_secret).unwrap();
 
     if is_job {
