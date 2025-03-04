@@ -10,6 +10,5 @@ jwt_secret = "secret"
 
 [pubsub]
 key_file = "/path/to/google/pubsub-service-account.json"
-jobs_topic = "jobs-topic-id"
-events_topic = "events-topic-id"
+topic = "jobs-topic"
 
