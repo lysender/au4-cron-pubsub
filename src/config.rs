@@ -3,6 +3,8 @@ use serde::Deserialize;
 use std::path::Path;
 use std::{fs, path::PathBuf};
 
+use crate::Result;
+
 #[derive(Clone, Debug, Deserialize)]
 pub struct TaskConfig {
     pub name: String,
@@ -24,11 +26,11 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn build(filename: &Path) -> Result<Config, &'static str> {
+    pub fn build(filename: &Path) -> Result<Config> {
         let toml_string = match fs::read_to_string(filename) {
             Ok(str) => str,
             Err(_) => {
-                return Err("Unable to read config file.");
+                return Err("Unable to read config file.".into());
             }
         };
 
@@ -36,23 +38,23 @@ impl Config {
             Ok(value) => value,
             Err(err) => {
                 println!("{:?}", err);
-                return Err("Unable to parse config file.");
+                return Err("Unable to parse config file.".into());
             }
         };
 
         if config.tasks.len() == 0 {
-            return Err("No tasks defined in the config file.");
+            return Err("No tasks defined in the config file.".into());
         }
 
         // Validate if key file exists
         let config_path = Path::new(config.pubsub.key_file.as_str());
         if !config_path.exists() {
-            return Err("Service account file does not exists.");
+            return Err("Service account file does not exists.".into());
         }
 
         // Validate if jwt_secret has enough string length
         if config.jwt_secret.len() < 1 {
-            return Err("JWT secret must not be empty.");
+            return Err("JWT secret must not be empty.".into());
         }
 
         Ok(config)

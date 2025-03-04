@@ -10,6 +10,9 @@ mod jwt;
 mod pubsub;
 mod run;
 
+// Re-exports
+pub use error::{Error, Result};
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();

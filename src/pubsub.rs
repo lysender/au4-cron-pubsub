@@ -2,7 +2,7 @@ use pub_sub_client::PubSubClient;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::error::Result;
+use crate::Result;
 use crate::jwt::create_token;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -32,12 +32,18 @@ pub enum PublishedPayload<T> {
 }
 
 pub fn create_client(key_file: &String) -> Result<PubSubClient> {
-    let client = PubSubClient::new(key_file.as_str(), std::time::Duration::from_secs(30))?;
-    Ok(client)
+    let res = PubSubClient::new(key_file.as_str(), std::time::Duration::from_secs(30));
+    match res {
+        Ok(client) => Ok(client),
+        Err(err) => {
+            let msg = format!("Error creating PubSub client: {}", err);
+            Err(msg.into())
+        }
+    }
 }
 
 pub fn create_message(
-    name: &String,
+    name: &str,
     is_job: bool,
     jwt_secret: &String,
 ) -> (PublishedPayload<StubData>, HashMap<String, String>) {
@@ -73,8 +79,15 @@ pub async fn send_message(
     topic: &String,
     message: (PublishedPayload<StubData>, HashMap<String, String>),
 ) -> Result<()> {
-    client
+    let res = client
         .publish::<PublishedPayload<StubData>, _>(topic, vec![message], None, None)
-        .await?;
-    Ok(())
+        .await;
+
+    match res {
+        Ok(_) => Ok(()),
+        Err(err) => {
+            let msg = format!("Error sending message: {}", err);
+            return Err(msg.into());
+        }
+    }
 }

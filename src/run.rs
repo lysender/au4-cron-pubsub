@@ -1,13 +1,22 @@
 use tokio_cron_scheduler::{Job, JobScheduler};
 use tracing::{error, info};
 
+use crate::Result;
 use crate::config::{Config, TaskConfig};
-use crate::error::Result;
 use crate::pubsub::{create_client, create_message, send_message};
 
 pub async fn run(config: Config) -> Result<()> {
-    let mut sched = JobScheduler::new().await?;
+    let sched_res = JobScheduler::new().await;
+    match sched_res {
+        Ok(sched) => run_scheduler(&config, sched).await,
+        Err(err) => {
+            error!("Error creating scheduler: {}", err);
+            Ok(())
+        }
+    }
+}
 
+async fn run_scheduler(config: &Config, mut sched: JobScheduler) -> Result<()> {
     for task in config.tasks.iter() {
         add_job(&sched, &config, task).await?;
     }
@@ -22,10 +31,13 @@ pub async fn run(config: Config) -> Result<()> {
 
     let _ = sched.start().await;
 
-    // Poor man's main loop
-    loop {
-        tokio::time::sleep(core::time::Duration::from_secs(60)).await;
-    }
+    // Wait for a signal to shut down
+    tokio::signal::ctrl_c()
+        .await
+        .expect("Failed to listen for shutdown signal");
+
+    info!("Shutting down scheduler");
+    let _ = sched.shutdown().await;
 
     Ok(())
 }
@@ -63,6 +75,11 @@ async fn add_job(sched: &JobScheduler, config: &Config, task: &TaskConfig) -> Re
     })
     .unwrap();
 
-    sched.add(job).await?;
-    Ok(())
+    match sched.add(job).await {
+        Ok(_) => Ok(()),
+        Err(err) => {
+            let msg = format!("Error adding job: {}", err);
+            Err(msg.into())
+        }
+    }
 }

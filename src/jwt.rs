@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header, encode};
 use serde::{Deserialize, Serialize};
@@ -12,7 +11,7 @@ struct Claims {
 // Duration in seconds
 const EXP_DURATION: i64 = 60 * 60; // 1 hour 
 
-use crate::error::Result;
+use crate::Result;
 
 pub fn create_token(subject: &str, secret: &str) -> Result<String> {
     let exp = Utc::now() + Duration::seconds(EXP_DURATION);
@@ -27,7 +26,7 @@ pub fn create_token(subject: &str, secret: &str) -> Result<String> {
         &claims,
         &EncodingKey::from_secret(secret.as_bytes()),
     ) else {
-        return Err(anyhow!("Error creating JWT token"));
+        return Err("Error creating JWT token".into());
     };
 
     Ok(token)
