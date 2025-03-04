@@ -1,4 +1,7 @@
-use pub_sub_client::PubSubClient;
+use google_cloud_googleapis::pubsub::v1::PubsubMessage;
+use google_cloud_pubsub::client::google_cloud_auth::credentials::CredentialsFile;
+use google_cloud_pubsub::client::{Client, ClientConfig};
+use google_cloud_pubsub::publisher::Publisher;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -7,87 +10,61 @@ use crate::jwt::create_token;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StubData {
-    pub stub: Option<String>,
+    #[serde(rename(serialize = "lastId"))]
+    pub last_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PublishedJobDto<T> {
+pub struct PublishedJobDto {
     pub id: String,
     pub job: String,
-    pub data: T,
+    pub data: StubData,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PublishedEventDto<T> {
-    pub id: String,
-    pub event: String,
-    pub data: T,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum PublishedPayload<T> {
-    Job(PublishedJobDto<T>),
-    Event(PublishedEventDto<T>),
-}
-
-pub fn create_client(key_file: &String) -> Result<PubSubClient> {
-    let res = PubSubClient::new(key_file.as_str(), std::time::Duration::from_secs(30));
-    match res {
-        Ok(client) => Ok(client),
-        Err(err) => {
-            let msg = format!("Error creating PubSub client: {}", err);
-            Err(msg.into())
-        }
+pub async fn create_client(key_file: &str) -> Result<Client> {
+    match CredentialsFile::new_from_file(key_file.to_string()).await {
+        Ok(creds) => match ClientConfig::default().with_credentials(creds).await {
+            Ok(config) => match Client::new(config).await {
+                Ok(client) => Ok(client),
+                Err(err) => Err(format!("Error creating PubSub client: {}", err).into()),
+            },
+            Err(err) => Err(format!("Error creating PubSub client config: {}", err).into()),
+        },
+        Err(err) => Err(format!("Error reading credentials file: {}", err).into()),
     }
 }
 
-pub fn create_message(
-    name: &str,
-    is_job: bool,
-    jwt_secret: &String,
-) -> (PublishedPayload<StubData>, HashMap<String, String>) {
+pub fn create_message(name: &str, jwt_secret: &str) -> (PublishedJobDto, HashMap<String, String>) {
     let id = uuid::Uuid::now_v7().to_string();
     let token = create_token(&id, jwt_secret).unwrap();
 
-    if is_job {
-        (
-            PublishedPayload::Job(PublishedJobDto {
-                id,
-                job: name.to_string(),
-                data: StubData { stub: None },
-            }),
-            HashMap::from([("token".to_string(), token)]),
-        )
-    } else {
-        (
-            PublishedPayload::Event(PublishedEventDto {
-                id,
-                event: name.to_string(),
-                data: StubData { stub: None },
-            }),
-            HashMap::from([
-                ("token".to_string(), token),
-                ("eventLogId".to_string(), uuid::Uuid::new_v4().to_string()),
-            ]),
-        )
-    }
+    (
+        PublishedJobDto {
+            id,
+            job: name.to_string(),
+            data: StubData { last_id: None },
+        },
+        HashMap::from([("token".to_string(), token)]),
+    )
 }
 
 pub async fn send_message(
-    client: &PubSubClient,
-    topic: &String,
-    message: (PublishedPayload<StubData>, HashMap<String, String>),
+    publisher: &Publisher,
+    message: (PublishedJobDto, HashMap<String, String>),
 ) -> Result<()> {
-    let res = client
-        .publish::<PublishedPayload<StubData>, _>(topic, vec![message], None, None)
-        .await;
+    let Ok(data) = serde_json::to_string(&message.0) else {
+        return Err("Error serializing message data".into());
+    };
 
-    match res {
+    let msg = PubsubMessage {
+        data: data.into(),
+        attributes: message.1,
+        ..Default::default()
+    };
+
+    let awaiter = publisher.publish(msg).await;
+    match awaiter.get().await {
         Ok(_) => Ok(()),
-        Err(err) => {
-            let msg = format!("Error sending message: {}", err);
-            return Err(msg.into());
-        }
+        Err(err) => Err(format!("Error sending message: {}", err).into()),
     }
 }

@@ -14,8 +14,7 @@ pub struct TaskConfig {
 #[derive(Clone, Debug, Deserialize)]
 pub struct PubSubConfig {
     pub key_file: String,
-    pub jobs_topic: String,
-    pub events_topic: String,
+    pub topic: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]

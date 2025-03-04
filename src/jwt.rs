@@ -1,6 +1,6 @@
-use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header, encode};
 use serde::{Deserialize, Serialize};
+use std::time::{Duration, SystemTime};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Claims {
@@ -8,17 +8,17 @@ struct Claims {
     exp: usize,
 }
 
-// Duration in seconds
-const EXP_DURATION: i64 = 60 * 60; // 1 hour 
-
 use crate::Result;
 
 pub fn create_token(subject: &str, secret: &str) -> Result<String> {
-    let exp = Utc::now() + Duration::seconds(EXP_DURATION);
+    let exp = SystemTime::now() + Duration::new(3600, 0);
+    let Ok(elapsed) = exp.duration_since(SystemTime::UNIX_EPOCH) else {
+        return Err("Error creating JWT token".into());
+    };
 
     let claims = Claims {
         sub: subject.to_string(),
-        exp: exp.timestamp() as usize,
+        exp: elapsed.as_secs() as usize,
     };
 
     let Ok(token) = encode(
